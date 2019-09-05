@@ -1,0 +1,7 @@
+.padding {
+    padding: 10px;
+}
+
+.padding :first-child {
+    width: 100%;
+}
