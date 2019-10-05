@@ -1,11 +1,14 @@
-import React, { useState, useCallback } from 'react'
+import React, { useState, useCallback, useEffect, createContext, useContext } from 'react'
 import { Router, navigate } from '@reach/router'
 import { Create, List } from './containers';
 import { Header } from './components';
 import commonStyles from './common.module.css';
 import { ContextProvider } from './context';
 
-// auth
+// auth specific code
+// auth specific code
+// auth specific code
+
 import * as firebase from 'firebase/app';
 import 'firebase/auth';
 
@@ -22,17 +25,32 @@ const firebaseConfig = {
 
 const firebaseApp = firebase.initializeApp(firebaseConfig);
 
-const firebaseAppAuth = firebaseApp.auth();
-
 var provider = new firebase.auth.GoogleAuthProvider();
-
-provider.addScope('https://www.googleapis.com/auth/contacts.readonly');
 
 firebase.auth().useDeviceLanguage();
 
+export const AuthContext = createContext();
+
+export const AuthProvider = ({ children }) => {
+  const [currentUser, setCurrentUser] = useState(null);
+
+  useEffect(() => {
+    firebaseApp.auth().onAuthStateChanged(setCurrentUser);
+  }, []);
+
+  return (
+    <AuthContext.Provider
+      value={{
+        currentUser
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
+};
 
 function Login() {
-  const [user, setUser] = useState(false)
+  const { currentUser } = useContext(AuthContext);
 
   const handleLogin = useCallback(
     async event => {
@@ -40,29 +58,36 @@ function Login() {
       try {
         await firebaseApp
           .auth().signInWithRedirect(provider);
-        navigate('list');
+        navigate('login');
       } catch (error) {
         alert(error);
       }
     },
   );
 
-
-  const signOut = () => {
-    setUser(false)
-  }
+  const handleSingOut = useCallback(
+    async event => {
+      event.preventDefault();
+      try {
+        await firebaseApp.auth().signOut()
+        navigate('login');
+      } catch (error) {
+        alert(error);
+      }
+    },
+  );
 
   return (
     <div className="App">
       <header className="App-header">
         {
-          user
-            ? <p>Hello, {user.displayName}</p>
+          currentUser
+            ? <p>Hello, {currentUser.displayName}</p>
             : <p>Please sign in.</p>
         }
         {
-          user
-            ? <button onClick={signOut}>Sign out</button>
+          currentUser
+            ? <button onClick={handleSingOut}>Sign out</button>
             : <button onClick={handleLogin}>Sign in with Google</button>
         }
       </header>
@@ -70,32 +95,41 @@ function Login() {
   );
 }
 
-function Auth() {
-  const [currentUser, isLogged] = useState(false)
+function Auth(props) {
+  const { currentUser } = useContext(AuthContext);
+  const { uri } = props
 
-  if (!currentUser) {
-    navigate("login")
-  }
+  const handleRedirect = () => {
+    return currentUser
+      ? navigate(uri)
+      : navigate('login');
+  };
 
   return (
-    <Login></Login>
+    <div>
+      {handleRedirect()}
+    </div>
   );
 }
 
-// end auth
+// end auth specific code
+// end auth specific code
+// end auth specific code
 
 function App() {
   return (
     <div className={commonStyles['default-padding']}>
       <Header />
       <ContextProvider>
-        <Router>
-          <Login path='login' />
-          <Auth path="/" default>
-            <List path='list' default />
-            <Create path='create' />
-          </Auth>
-        </Router>
+        <AuthProvider>
+          <Router>
+            <Login path='login' />
+            <Auth path="/" default>
+              <List path='list' default />
+              <Create path='create' />
+            </Auth>
+          </Router>
+        </AuthProvider>
       </ContextProvider>
     </div>
   );
