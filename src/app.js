@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, createContext, useContext } from 'react'
+import React, { Fragment, useState, useCallback, useEffect, createContext, useContext } from 'react'
 import { Router, navigate } from '@reach/router'
 import { Create, List } from './containers';
 import { Header } from './components';
@@ -97,18 +97,12 @@ function Login() {
 
 function Auth(props) {
   const { currentUser } = useContext(AuthContext);
-  const { uri } = props
-
-  const handleRedirect = () => {
-    return currentUser
-      ? navigate(uri)
-      : navigate('login');
-  };
+  const { children } = props;
 
   return (
-    <div>
-      {handleRedirect()}
-    </div>
+    <Fragment>
+      {currentUser ? children : navigate('login')}
+    </Fragment>
   );
 }
 
@@ -120,8 +114,8 @@ function App() {
   return (
     <div className={commonStyles['default-padding']}>
       <Header />
-      <ContextProvider>
-        <AuthProvider>
+      <AuthProvider>
+        <ContextProvider>
           <Router>
             <Login path='login' />
             <Auth path="/" default>
@@ -129,8 +123,8 @@ function App() {
               <Create path='create' />
             </Auth>
           </Router>
-        </AuthProvider>
-      </ContextProvider>
+        </ContextProvider>
+      </AuthProvider>
     </div>
   );
 }
